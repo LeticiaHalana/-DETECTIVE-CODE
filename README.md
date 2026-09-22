@@ -110,4 +110,4 @@ Quando todas as 4 pistas forem encontradas:
 4. Se o código estiver correto, o hacker **NULL** será ejetado e a missão estará concluída com sucesso!
 
 ---
-*Boa sorte, equipe de TI do SENAI! O tempo está a contar! ⏳*
+*Boa sorte, equipe! O tempo está contando! ⏳*
