@@ -1,1 +1,1 @@
-"Tem que procurar dentro do histórico de commits qual commit é o correto"
+"Primeiro commit registrado não é o correto"
