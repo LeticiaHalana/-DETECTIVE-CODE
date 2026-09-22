@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENAI | Terminal de Segurança</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24'>🚨</text></svg>">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        senai: {
+                            red: '#e3000f',
+                            redDark: '#8b0000',
+                            redGlow: '#ff2a38',
+                            blueDark: '#070b19',
+                            panel: '#0f172a'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['Share Tech Mono', 'monospace'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050811;
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Scanline CRT FX */
+        .crt-overlay {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Pulsing Emergency Red Border */
+        @keyframes emergencyPulse {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(227, 0, 15, 0.4), inset 0 0 15px rgba(227, 0, 15, 0.2);
+                border-color: #e3000f;
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(227, 0, 15, 0.8), inset 0 0 25px rgba(227, 0, 15, 0.5);
+                border-color: #ff4d4d;
+            }
+        }
+
+        .emergency-card {
+            animation: emergencyPulse 2.5s infinite ease-in-out;
+        }
+
+        /* Glitch effect on header */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-hover:hover {
+            animation: glitch 0.2s infinite;
+        }
+
+        /* Ejected player float keyframes */
+        @keyframes floatSpace {
+            0% { transform: translate(-100px, 20vh) rotate(0deg) scale(0.6); opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { transform: translate(calc(100vw + 100px), -20vh) rotate(720deg) scale(1.2); opacity: 0; }
+        }
+
+        .ejecting-astronaut {
+            animation: floatSpace 8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col justify-between relative selection:bg-red-600 selection:text-white">
+
+    <!-- Background Canvas Stars & Particles -->
+    <canvas id="spaceCanvas" class="fixed inset-0 w-full h-full z-0 pointer-events-none"></canvas>
+    <div class="crt-overlay fixed inset-0 z-50 pointer-events-none"></div>
+
+    <!-- Top Header -->
+    <header class="relative z-10 w-full border-b border-red-900/60 bg-black/60 backdrop-blur-md py-3 px-4 md:px-8">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-senai-red text-white font-orbitron font-black text-xl px-3 py-1 rounded shadow-lg tracking-wider">
+                    SENAI
+                </div>
+                <div class="border-l border-gray-700 pl-3">
+                    <h1 class="font-orbitron font-bold text-sm md:text-base text-gray-200 uppercase tracking-widest flex items-center gap-2">
+                        <span>SISTEMA DE DEFESA DE REDE</span>
+                        <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                    </h1>
+                    <p class="text-xs text-gray-400 font-mono">PROTOCOLO DE SEGURANÇA v4.09</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-red-950/80 border border-red-600/80 px-3 py-1.5 rounded-full text-xs font-mono text-red-300">
+                <svg class="w-4 h-4 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="font-bold tracking-wider">🚨Emergency Meeting!</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 flex-1 flex items-center justify-center p-4 md:p-6 my-auto">
+        <div class="w-full max-w-2xl bg-slate-900/90 border-2 border-red-600 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-xl emergency-card relative overflow-hidden">
+            
+            <!-- Diagonal Banner -->
+            <div class="absolute -right-12 -top-12 bg-red-600 text-white font-orbitron font-bold text-xs py-1 px-12 rotate-45 shadow-md border-b border-red-400">
+                ALERTA NÍVEL 1
+            </div>
+
+            <!-- Header Icon & Status -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-950/80 border-2 border-red-500 text-red-500 mb-3 shadow-[0_0_20px_rgba(227,0,15,0.5)]">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                </div>
+                <h2 class="font-orbitron font-extrabold text-2xl md:text-3xl text-red-500 tracking-wider uppercase mb-1 glitch-hover cursor-default">
+                    TERMINAL DE EJEÇÃO DO INVASOR
+                </h2>
+               
+            </div>
+
+            <!-- Key Form -->
+            <form id="ejectForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="chaveInput" class="block text-xs uppercase tracking-widest text-slate-400 font-bold font-orbitron">
+                            Sequência Mestra de Ejeção:
+                        </label>
+                        
+                    </div>
+
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="chaveInput" 
+                            required 
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="EX: AZUL-DELETE-FRONTEND-99" 
+                            class="w-full bg-black/80 border-2 border-slate-700 focus:border-red-500 text-red-400 font-mono text-center text-lg md:text-xl py-3.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all tracking-widest uppercase placeholder-slate-600 shadow-inner"
+                        >
+                        <button 
+                            type="button"
+                            onclick="clearInput()" 
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-sm p-1 transition"
+                            title="Limpar campo"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Helper Hints / Pattern -->
+                <div class="bg-slate-950/70 rounded-lg p-3 border border-slate-800 text-xs font-mono grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-slate-400">
+                    <div class="p-1 rounded bg-slate-900 border border-slate-800">
+                        <span class="block text-[9px] text-slate-500">1. COR</span>
+                        <span id="hintCor" class="text-slate-300">???</span>
+                    </div>
+                    <div class="p-1 rounded bg-slate-900 border border-slate-800">
+                        <span class="block text-[9px] text-slate-500">2. COMANDO</span>
+                        <span id="hintComando" class="text-slate-300">???</span>
+                    </div>
+                    <div class="p-1 rounded bg-slate-900 border border-slate-800">
+                        <span class="block text-[9px] text-slate-500">3. SETOR</span>
+                        <span id="hintSetor" class="text-slate-300">???</span>
+                    </div>
+                    <div class="p-1 rounded bg-slate-900 border border-slate-800">
+                        <span class="block text-[9px] text-slate-500">4. CÓDIGO</span>
+                        <span id="hintCodigo" class="text-slate-300">???</span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button 
+                    type="submit" 
+                    id="btnSubmit"
+                    class="w-full bg-gradient-to-r from-red-700 via-red-600 to-red-800 hover:from-red-600 hover:to-red-500 text-white font-orbitron font-extrabold py-4 px-6 rounded-xl text-base md:text-lg uppercase tracking-wider shadow-lg transform active:scale-[0.98] transition flex items-center justify-center gap-3 border border-red-500/50 cursor-pointer"
+                >
+                    <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span>EXECUTAR SEQUÊNCIA DE EJEÇÃO</span>
+                </button>
+            </form>
+
+            <!-- Error Banner -->
+            <div id="errorAlert" class="hidden mt-4 p-4 bg-red-950/90 border-2 border-red-500 text-red-200 text-center text-xs md:text-sm rounded-xl font-mono shadow-lg animate-bounce">
+                <div class="flex items-center justify-center gap-2 font-bold mb-1">
+                    <span class="text-lg">🛑</span> ACESSO NEGADO! SEQUÊNCIA INCORRETA.
+                </div>
+                <p class="text-red-300/80 text-[11px]">As credenciais informadas não correspondem aos registros do servidor. Verifique com cada uma das 4 frentes.</p>
+            </div>
+
+            <!-- Footer notes -->
+            <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap justify-between items-center text-[11px] text-slate-500">
+                <span>SENAI - Serviço Nacional de Aprendizagem Industrial</span>
+                <span>Programa - Profissionaliza Goiás</span>
+                <button onclick="openTeacherModal()" class="hover:text-slate-400 underline cursor-pointer flex items-center gap-1">
+                    <span>🔑 Modo</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Victory / Ejection Overlay Modal -->
+    <div id="victoryModal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center p-4 text-center overflow-hidden">
+        
+        <!-- Animated Canvas for Ejection Floating -->
+        <div id="ejectSpaceScene" class="absolute inset-0 pointer-events-none">
+            <!-- Impostor SVG Floating -->
+            <div id="astronautActor" class="absolute top-1/2 left-0 -mt-16 w-32 h-32 text-red-600 hidden z-20">
+                <svg viewBox="0 0 100 100" fill="currentColor" class="w-full h-full drop-shadow-[0_0_15px_rgba(227,0,15,0.8)]">
+                    <!-- Crewmate Body -->
+                    <path d="M 30,20 C 15,20 15,50 15,75 C 15,85 22,88 28,88 L 35,88 C 40,88 42,82 42,75 L 42,65 L 58,65 L 58,75 C 58,82 60,88 65,88 L 72,88 C 78,88 85,85 85,75 C 85,50 85,20 70,20 C 60,15 40,15 30,20 Z" fill="#e3000f" />
+                    <!-- Backpack -->
+                    <rect x="5" y="35" width="12" height="35" rx="5" fill="#a0000a" />
+                    <!-- Visor -->
+                    <ellipse cx="42" cy="35" rx="18" ry="12" fill="#93c5fd" stroke="#1e3a8a" stroke-width="3" />
+                    <ellipse cx="46" cy="32" rx="8" ry="4" fill="#ffffff" opacity="0.8" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="max-w-lg w-full border-2 border-emerald-500 bg-slate-900 rounded-2xl p-6 md:p-8 shadow-[0_0_50px_rgba(16,185,129,0.3)] relative z-30 transform scale-95 transition-all">
+            <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-[0_0_20px_rgba(16,185,129,0.5)] font-orbitron font-bold">
+                ✓
+            </div>
+
+            <h3 class="font-orbitron font-black text-2xl md:text-3xl text-emerald-400 mb-2 uppercase tracking-wide">
+                IMPOSTOR EJETADO!
+            </h3>
+            
+            <p class="text-slate-200 text-sm md:text-base font-mono mb-6 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <span class="text-red-400 font-bold">[NULL]</span> não era o Administrador da Rede SENAI.
+            </p>
+
+            <div class="bg-black/80 p-4 rounded-xl border border-emerald-900/60 text-xs text-emerald-400 font-mono mb-6 text-left space-y-2 shadow-inner">
+                <div class="flex justify-between border-b border-emerald-900/40 pb-1">
+                    <span>> STATUS DO BANCO DE DADOS:</span>
+                    <span class="text-emerald-300 font-bold">RESTAURADO</span>
+                </div>
+                <div class="flex justify-between border-b border-emerald-900/40 pb-1">
+                    <span>> CÓDIGO FONTE (C#):</span>
+                    <span class="text-emerald-300 font-bold">RECOMPILADO</span>
+                </div>
+                <div class="flex justify-between border-b border-emerald-900/40 pb-1">
+                    <span>> REQUISITOS DO PROJETO:</span>
+                    <span class="text-emerald-300 font-bold">HOMOLOGADOS</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>> REPOSITÓRIO GITHUB:</span>
+                    <span class="text-emerald-300 font-bold">RASTREADO</span>
+                </div>
+            </div>
+
+            <button 
+                onclick="location.reload()" 
+                class="w-full bg-slate-800 hover:bg-slate-700 text-white font-orbitron text-xs md:text-sm py-3 px-6 rounded-lg border border-slate-600 font-bold tracking-wider transition cursor-pointer"
+            >
+                REINICIAR TERMINAL
+            </button>
+        </div>
+    </div>
+
+    <!-- Teacher Settings Modal -->
+    <div id="teacherModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl font-sans text-slate-200">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                <h3 class="font-orbitron font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <span>⚙️ Painel do Professor SENAI</span>
+                </h3>
+                <button onclick="closeTeacherModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">
+                Gerador de Hash SHA-256 para alterar a resposta correta da atividade em turmas futuras.
+            </p>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-bold mb-1">Digite a nova Sequência de Resposta:</label>
+                    <input 
+                        type="text" 
+                        id="customKeyInput" 
+                        placeholder="EX: AZUL-DELETE-FRONTEND-99" 
+                        oninput="updateTeacherHashPreview()"
+                        class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-red-400 font-mono uppercase focus:outline-none focus:border-red-500"
+                    >
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                    <span class="block text-[10px] text-slate-500 font-mono mb-1">HASH SHA-256 GERADO:</span>
+                    <code id="hashPreview" class="text-[10px] text-emerald-400 font-mono break-all block">
+                        7cb85cb80bd5d225d3bd87995ae938891692c5482f91167ea11bd116142fd4d7
+                    </code>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button 
+                        onclick="saveCustomHash()" 
+                        class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded transition text-xs cursor-pointer"
+                    >
+                        Salvar para este Navegador
+                    </button>
+                    <button 
+                        onclick="resetDefaultHash()" 
+                        class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 px-3 rounded transition text-xs cursor-pointer"
+                    >
+                        Restaurar Padrão
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ====================================================================
+           SEGURANÇA & CRIPTOGRAFIA DE DADOS (SHA-256)
+           ==================================================================== */
+        
+        // Hash Padrão SHA-256 correspondente a "VERMELHO-DROP-BACKEND-120"
+        const DEFAULT_SHA256_HASH = "cd02294e6d51c84fd86ae2e6b1913278ba6e778aa7e23fce3d52312ed7e49134";
+
+        // Obtém o hash salvo localmente (se o professor tiver configurado) ou o padrão
+        function getActiveHash() {
+            return localStorage.getItem('senai_bugout_custom_hash') || DEFAULT_SHA256_HASH;
+        }
+
+        // Função nativa do navegador para calcular SHA-256 em tempo de execução
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const digest = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        // Normalização flexível: remove espaços extras, converte pra maiúsculo
+        function normalizeKey(str) {
+            return str.trim()
+                      .toUpperCase()
+                      .replace(/\s+/g, '')        // Remove todos os espaços
+                      .replace(/–/g, '-');        // Normaliza en-dash se colado
+        }
+
+        /* ====================================================================
+           SINTETIZADOR DE ÁUDIO WEB (FX Sem Arquivos Externos)
+           ==================================================================== */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(110, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'success') {
+                // Arpeggio de Vitória
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const subOsc = audioCtx.createOscillator();
+                    const subGain = audioCtx.createGain();
+                    subOsc.type = 'triangle';
+                    subOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    subGain.connect(audioCtx.destination);
+                    subOsc.connect(subGain);
+                    subGain.gain.setValueAtTime(0.25, now + idx * 0.12);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+                    subOsc.start(now + idx * 0.12);
+                    subOsc.stop(now + idx * 0.12 + 0.4);
+                });
+            }
+        }
+
+        /* ====================================================================
+           INTERFACE DE USUÁRIO & MANIPULAÇÃO
+           ==================================================================== */
+        const chaveInput = document.getElementById('chaveInput');
+        const errorAlert = document.getElementById('errorAlert');
+        const victoryModal = document.getElementById('victoryModal');
+
+        // Atualização em tempo real das dicas
+        chaveInput.addEventListener('input', (e) => {
+            playSound('click');
+            const val = e.target.value.toUpperCase();
+            const parts = val.split('-');
+
+            document.getElementById('hintCor').textContent = parts[0] || '???';
+            document.getElementById('hintComando').textContent = parts[1] || '???';
+            document.getElementById('hintSetor').textContent = parts[2] || '???';
+            document.getElementById('hintCodigo').textContent = parts[3] || '???';
+        });
+
+        function clearInput() {
+            chaveInput.value = '';
+            document.getElementById('hintCor').textContent = '???';
+            document.getElementById('hintComando').textContent = '???';
+            document.getElementById('hintSetor').textContent = '???';
+            document.getElementById('hintCodigo').textContent = '???';
+            errorAlert.classList.add('hidden');
+            chaveInput.focus();
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            errorAlert.classList.add('hidden');
+
+            const rawInput = chaveInput.value;
+            const normalized = normalizeKey(rawInput);
+
+            if (!normalized) return;
+
+            // Calcula a hash SHA-256 do que o aluno digitou
+            const inputHash = await sha256(normalized);
+            const targetHash = getActiveHash();
+
+            if (inputHash === targetHash) {
+                // Vitória!
+                playSound('success');
+                showVictory();
+            } else {
+                // Erro
+                playSound('error');
+                errorAlert.classList.remove('hidden');
+                chaveInput.classList.add('border-red-500', 'bg-red-950/50');
+                setTimeout(() => {
+                    chaveInput.classList.remove('bg-red-950/50');
+                }, 1000);
+            }
+        }
+
+        function showVictory() {
+            victoryModal.classList.remove('hidden');
+            victoryModal.classList.add('flex');
+
+            // Dispara a animação do boneco voando no espaço
+            const astronaut = document.getElementById('astronautActor');
+            astronaut.classList.remove('hidden');
+            astronaut.classList.add('ejecting-astronaut');
+        }
+
+        /* ====================================================================
+           MODO PROFESSOR (CONFIGURAÇÃO DE HASH)
+           ==================================================================== */
+        function openTeacherModal() {
+            document.getElementById('teacherModal').classList.remove('hidden');
+            updateTeacherHashPreview();
+        }
+
+        function closeTeacherModal() {
+            document.getElementById('teacherModal').classList.add('hidden');
+        }
+
+        async function updateTeacherHashPreview() {
+            const val = document.getElementById('customKeyInput').value;
+            const normalized = normalizeKey(val || 'VERMELHO-DROP-BACKEND-120');
+            const hash = await sha256(normalized);
+            document.getElementById('hashPreview').textContent = hash;
+        }
+
+        async function saveCustomHash() {
+            const val = document.getElementById('customKeyInput').value;
+            if (!val) return;
+            const normalized = normalizeKey(val);
+            const hash = await sha256(normalized);
+            localStorage.setItem('senai_bugout_custom_hash', hash);
+            alert(`Sua nova chave ("${normalized}") foi ativada neste navegador!`);
+            closeTeacherModal();
+        }
+
+        function resetDefaultHash() {
+            localStorage.removeItem('senai_bugout_custom_hash');
+            alert('A chave foi restaurada para o padrão ("VERMELHO-DROP-BACKEND-120").');
+            closeTeacherModal();
+        }
+
+        // Atalho secreto no teclado (Ctrl + Shift + K) para abrir o painel do professor
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+                openTeacherModal();
+            }
+        });
+
+        /* ====================================================================
+           FUNDO CANVAS ANIMADO (ESTRELAS & DEBRIS ESPACIAIS)
+           ==================================================================== */
+        const canvas = document.getElementById('spaceCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+
+        function initStars() {
+            stars = [];
+            const count = Math.floor((canvas.width * canvas.height) / 3000);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.8 + 0.2,
+                    speed: Math.random() * 0.5 + 0.1,
+                    alpha: Math.random(),
+                    pulse: Math.random() * 0.02
+                });
+            }
+        }
+
+        function renderSpace() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                star.alpha += star.pulse;
+                if (star.alpha > 1 || star.alpha < 0.2) star.pulse = -star.pulse;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                star.y -= star.speed;
+                if (star.y < 0) star.y = canvas.height;
+            });
+
+            requestAnimationFrame(renderSpace);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = () => {
+            resizeCanvas();
+            renderSpace();
+        };
+
+        /* ====================================================================
+           MENSAGEM DE PROVOCAÇÃO NO CONSOLE (F12 ANTI-CHEAT)
+           ==================================================================== */
+        console.log(
+            "%c🛑 PROCURANDO A PALAVRA-CHAVE NO INSPECIONAR ELEMENTO?",
+            "color: #e3000f; font-size: 20px; font-weight: bold; background: #000; padding: 8px; border: 2px solid #e3000f;"
+        );
+        console.log(
+            "%cO hacker [NULL] criptografou a validação com o algoritmo matemático SHA-256.\nA única forma de descobrir a resposta e ejetá-lo é trabalhando em equipe nas 4 frentes do SENAI!",
+            "color: #38bdf8; font-size: 13px; font-weight: bold;"
+        );
+    </script>
+</body>
+</html>
